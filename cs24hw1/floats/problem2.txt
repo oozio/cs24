@@ -1,0 +1,15 @@
+Part A:
+-------
+These results are different because the roundoff error accumulates with severity proportional to the magnitude of the number, since the number of bits we have to represent a float is limited.
+
+The sum computed in order of increasing magnitude is the most accurate, since we can sum the smaller numbers without losing much accuracy, since we're adding in the less accurate larger numbers at the end.
+
+Datasets with jumps in magnitude will lead to large error, even if we sort beforehand, since the magnitudes are not close anyway. Small, wide-ranging datasets will give terrible results. 
+
+Part B:
+-------
+Pairwise summation reduces the roundoff error since we're no longer adding relatively ever-smaller numbers to an ever-increasing sum, but sums of similar magnitudes to each other.
+
+
+
+

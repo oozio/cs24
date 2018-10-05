@@ -1,0 +1,27 @@
+Bugs in rl_decode() function:
+-----------------------------
+
+1) Push/pop: We need to push rdx, rcx, and rsi 
+in addition to rbx and rdi, since we want to
+recover these values after calling malloc, 
+which overwrites them.
+
+2) Integer size limitations: In find_space_loop,
+we add the content of rdi[i] into %bl, which can
+hold only 8 bits, up to a maximum of decimal value
+255. For this file to work with larger inputs, 
+we need to use a different, larger counter; then
+we need to keep only the lower eight bits of this
+counter, incrementing the final tally in ebx by
+the same amount.
+
+3) Increment error: In line 41 of the original, to
+increment a counter, rcx was incremented by 1;
+however, we need to increment by 2, since we want 
+to look at every other char, which takes up 1 
+space each.
+
+4) Increment output counter: In write_loop, the
+output counter r10 never gets incremented, so to
+avoid writing the same thing over and over again,
+we add a line that adds 1 to the value in r10. 

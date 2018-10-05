@@ -1,0 +1,16 @@
+d) Since this is a direct-mapped cache, each cache set has 1 line,
+	so with a total size of 8192 bytes and a block size of 32 bytes,
+	we get that there are 8192 / 32 = 256 sets. We run
+	./heaptest 32:256:1, and get as the miss rate 2.40%.
+
+
+e)  Since this is a fully associative cache, there's only 1 set,
+	so with a total size of 8192 bytes and a block size of 32 bytes,
+	we get that there are 8192 / 32 = 256 lines. We run
+	./heaptest 32:1:256, and get as the miss rate 2.45%.
+
+g) With LRU:
+
+direct map: ./heaptest 32:256:1, miss rate is 2.40%.
+
+fully associative: ./heaptest 32:1:256, miss rate is 2.26%.

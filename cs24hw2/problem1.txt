@@ -1,0 +1,5 @@
+What does the assembly code do?
+-------------------------------
+
+
+It copies x into %rax, multiplies that by 3, adds 12, multiplies it by x, and then subtracts 17, preserving the sign and using quadwords throughout. It calculates (3x+12)x-17.

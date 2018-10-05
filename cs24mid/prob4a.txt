@@ -1,0 +1,42 @@
+Explicit Allocator Scenario:  Allocation Fails under First-Fit but not Best-Fit
+===============================================================================
+Suppose we start out with a 16 KB heap:
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  |                                                               |
+  |                                                               |
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+
+We allocate using first fit an 8 KB block (A), a 4 KB block (B), and then a
+4 KB block (C).
+
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  |A                              |B              |C              |
+  |8                              |4              |4              |
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+ 
+
+Then we free the 8 KB block (A), and the second 4 KB block (C), 
+leaving 2 non-coalesced free blocks. 
+
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  |_                              |B              |_              |
+  |8                              |4              |4              |
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+ 
+
+We allocate using first fit another 4 KB block called A:
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  |A              |_              |B              |_              |
+  |4              |4              |4              |4              |
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+ 
+
+We try to allocate 8 bits into a block called C, but since the largest
+remaining blocks are at most 4 KBs long, we would fail.
+
+If we'd used best fit to allocate the second set, however, we would've had:
+
+We allocate using best fit 4 KB block called A: 
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+  |_                              |B              |A              |
+  |8                              |4              |4              |
+  +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+ ,
+
+  after which we can allocate another 8 KBs from the first free block.

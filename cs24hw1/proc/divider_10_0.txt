@@ -1,0 +1,1 @@
+With the inputs 10 and 0, this program went into an infinite loop because we rely on decrementing the remainder to know when we've reached the correct quotient, and since here we're always subtracting 0, our remainder never decreases. 

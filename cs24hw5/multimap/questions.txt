@@ -1,0 +1,154 @@
+Multimap Caching Performance
+============================
+
+a)  Size of hardware cache lines:
+64 B
+
+
+b)  Output of mmperf:
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 randomly generated pairs to multimap.
+Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 50), values in range [0, 1000).
+997144 out of 1000000 test-pairs were in the map (99.7%)
+Total wall-clock time:  16.16 seconds		μs per probe:  16.164 μs
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 randomly generated pairs to multimap.
+Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 50), values in range [0, 1000).
+997715 out of 1000000 test-pairs were in the map (99.8%)
+Total wall-clock time:  31.25 seconds		μs per probe:  31.251 μs
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 randomly generated pairs to multimap.
+Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 50), values in range [0, 1000).
+997325 out of 1000000 test-pairs were in the map (99.7%)
+Total wall-clock time:  30.35 seconds		μs per probe:  30.345 μs
+
+
+Testing multimap performance:  15000000 pairs, 1000000 probes, random keys.
+Adding 15000000 randomly generated pairs to multimap.
+Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 100000), values in range [0, 50).
+949586 out of 1000000 test-pairs were in the map (95.0%)
+Total wall-clock time:  5.51 seconds		μs per probe:  5.507 μs
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 randomly generated pairs to multimap.
+Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times with randomly generated test-pairs.
+Keys in range [0, 100000), values in range [0, 50).
+976 out of 50000 test-pairs were in the map (2.0%)
+Total wall-clock time:  89.39 seconds		μs per probe:  1787.779 μs
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 randomly generated pairs to multimap.
+Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times with randomly generated test-pairs.
+Keys in range [0, 100000), values in range [0, 50).
+980 out of 50000 test-pairs were in the map (2.0%)
+Total wall-clock time:  72.79 seconds		μs per probe:  1455.786 μs
+
+
+c)  Explanation of tests:
+First 3:
+The range for the keys is relatively small, while the range for the values is
+much larger. This exercises the multimap's ability to find a value in a large
+linked list quickly, which is linked to how these values are kept and how 
+near each other those addresses are, as well as the order that we look for
+values in.
+
+Second 3:
+The range for the values is relatively small, but the range for the keys is
+super big. This exercises the multimap's ability to find a key, which is linked
+to how these keys are kept and how near each other those addresses are, as 
+well as the order that we look for these keys in. Since we allocate one 
+key at a time and have to go through half of the map of keys larger than 
+the one we want when we're looking for a key, this is slow.
+
+
+e)  Explanation of your optimizations:
+
+1) I added a values array of size (64B = size * (4B per int) - 4B * 1 int - 8B
+* 1 pointer), or size = 13, into each multimap_value struct. 
+This clusters the values together, so that we can read the nearby values 
+in the cache whenever we access a value. This should speed up the first 3 
+tests, since previously, the values were not arranged near each other 
+in the linked list.
+	The changes this induced are mostly in add_mm_value() and the struct 
+declarations at the top, although the last two functions, contains_pair() and
+traverse_helper(), had small changes as well. 
+
+2) I tried to implement a thing to allocate nodes in groups instead of
+one at a time, so that their addresses will be close together, instead
+of being dispersed like they were in the original file. This should let
+us read through the keys much more quickly, since each node's neighbors
+will be in the cache, speeding up the last 3 tests significantly. 
+
+Specifically, I tried to change the allocation method for the nodes
+from one at a time to the object pool approach, where we allocate
+a bunch at once, fill the pool one node at a time as needed,
+and then expand the pool once it's full. This can be seen in 
+grow_pool() and alloc_mm_node()
+
+Unfortunately, this didn't work. I think somewhere I must be egressing beyond
+my malloc'd memory, since I get an invalid pointer error when I try to free, and 
+expanding the pool too many times eventually causes malloc to fail. I ran out of
+time to fix this.
+
+f)  Output of ommperf:
+
+Testing multimap performance:  300000 pairs, 1000000 probes, random keys.
+Adding 300000 randomly generated pairs to multimap.
+Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 50), values in range [0, 1000).
+997144 out of 1000000 test-pairs were in the map (99.7%)
+Total wall-clock time:  0.97 seconds		μs per probe:  0.974 μs
+
+Testing multimap performance:  300000 pairs, 1000000 probes, incrementing keys.
+Adding 300000 randomly generated pairs to multimap.
+Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 50), values in range [0, 1000).
+997715 out of 1000000 test-pairs were in the map (99.8%)
+Total wall-clock time:  1.03 seconds		μs per probe:  1.034 μs
+
+Testing multimap performance:  300000 pairs, 1000000 probes, decrementing keys.
+Adding 300000 randomly generated pairs to multimap.
+Keys in range [0, 50), values in range [0, 1000).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 50), values in range [0, 1000).
+997347 out of 1000000 test-pairs were in the map (99.7%)
+Total wall-clock time:  1.03 seconds		μs per probe:  1.028 μs
+
+Testing multimap performance:  15000000 pairs, 1000000 probes, random keys.
+Adding 15000000 randomly generated pairs to multimap.
+Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 1000000 times with randomly generated test-pairs.
+Keys in range [0, 100000), values in range [0, 50).
+950531 out of 1000000 test-pairs were in the map (95.1%)
+Total wall-clock time:  0.87 seconds		μs per probe:  0.872 μs
+
+Testing multimap performance:  100000 pairs, 50000 probes, incrementing keys.
+Adding 100000 randomly generated pairs to multimap.
+Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times with randomly generated test-pairs.
+Keys in range [0, 100000), values in range [0, 50).
+11432 out of 50000 test-pairs were in the map (22.9%)
+Total wall-clock time:  28.24 seconds		μs per probe:  564.706 μs
+
+Testing multimap performance:  100000 pairs, 50000 probes, decrementing keys.
+Adding 100000 randomly generated pairs to multimap.
+Keys in range [0, 100000), values in range [0, 50).
+Probing multimap 50000 times with randomly generated test-pairs.
+Keys in range [0, 100000), values in range [0, 50).
+11305 out of 50000 test-pairs were in the map (22.6%)
+Total wall-clock time:  27.94 seconds		μs per probe:  558.785 μs

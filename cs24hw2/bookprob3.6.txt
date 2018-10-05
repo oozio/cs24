@@ -1,0 +1,16 @@
+Answers to Practice Problem 3.6, CS:APP3e pp.192-193
+----------------------------------------------------
+
+1) store in %rdx the value 6 + x
+
+2) store in %rdx the value x + y
+
+3) store in %rdx the value x + 4y
+
+4) store in %rdx the value 7 + x + 8x = 7 + 9x 
+
+5) store in %rdx the value 10 + 4y
+
+6)  store in %rdx the value 9 + x + 2y
+
+

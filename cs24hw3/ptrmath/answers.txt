@@ -1,0 +1,25 @@
+Answers for the "Arrays, Pointer Arithmetic, and Structs" section of CS24 HW3:
+
+1. Writing p as a 4x4 array, the code first zeroes all 16 bytes,
+then we write deadbeef in little endian order starting at byte 3
+(0 index),  and then we write cafebabe the same way starting at 
+byte 12.
+
+p: 0x0000 0000 0000 0000 0000 0000 0000 0000
+p: 0x0000 00fe bead de00 0000 0000 0000 0000
+p: 0x0000 00fe bead de00 0000 0000 beba feca
+
+
+2.
+int: offset = 0, size = 4 (in bytes)
+code: offset = 4, size = 5
+next: offset = 16, size = 8; the offset is 16 since that's the
+first value divisible by 8 after (4 + 5) = 9. 
+ 
+total size = 16 + 8 = 24
+unused = 0 + 0 + (16 - 9) = 7
+
+
+3. arr[4].code[3] = 'A' sets the (0 index) 3rd element of code
+in the 4th entry in arr to A, which is the 
+24 * 4 + 7 = 103th element; then we want offset = 103.

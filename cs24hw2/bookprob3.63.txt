@@ -1,0 +1,63 @@
+Answer to Problem 3.63, CS:APP3e pp.314-315
+-------------------------------------------
+long switch_prov(long x, long n) {
+    long result = x;
+    switch(n) {
+
+        case 60:
+            result = 8x;
+            break;
+            
+        case 61: //same as default
+            result = 75 + x;
+            break;
+
+        case 62:
+            result = 8x;
+            break;
+            
+        case 63:
+            result = x;
+            result = result >> 4;
+            break;
+            
+        case 64:
+            result = x;
+            result = result << 4;
+            result = result - x;
+            x = result;
+        
+        case 65:
+            x = x * x;
+            result = 75 + x;
+            break;
+        
+
+        default:
+            result = 75 + x;
+        
+    }
+    
+    return result;
+
+}
+
+The machine code subtracts 60 from n, compares it with 5; then:
+
+If n > 5, we go to the line at the bottom, where we return 75 + x. 
+
+If n <= 5, we go into the jump table, where:
+
+    - if n is 0, go to first case, where we return 8x
+    - if n is 1, go to second case, where we return 75 + x
+    - if n is 2, go to third case, where we return 8x
+    - if n is 3, go to fourth case, where we set rax to x, shift right 
+        4 times while preserving the sign, and return that
+    - if n is 4, go to fifth case, where we set rax to x, shift left
+        4 times, not preserving the sign, subtract x from rax, set
+        x to rax, multiply x by x, set rax to 75 + x, and return that
+    - if n is 5, go to sixth case, where we multiply x by x, set
+        rax to 75 + x, and return that. 
+
+
+

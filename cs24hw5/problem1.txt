@@ -1,0 +1,18 @@
+a. 
+	3GHz processor
+	cache has 1 cycle of access latency
+	main has 100 cycles of latency
+	1 datum per instruction
+
+	Each second, we try to run 3G instructions. If we had a miss rate of 0, 
+	we would complete all 3G, since each hit takes 1 cycle. Since we're only
+	completing 750M, this means that we're using up 
+	(750M * 1 cycle) + (n * 100 cycles) = 3G cycles, where n is the number of 
+	misses. Then (n * 100) = 2.25 billion; n = 22.5 * 10 ^ 7. Then the miss
+	rate is n / (instructions attempted) = n / (22.5 * 10 ^ 7 + 750 M) = 2.91%. 
+
+b. If we want to double the number of completed instructions per second, we 
+	have to satisfy the equation
+	(750M * 2 * 1 cycle) + (n * 100 cycles) = 3G cycles, where n is the number
+	of misses. Then (n * 100) = 1.5 billion ; n = 15 million. The miss rate 
+	is n / (15 million + 750M) = 1.96%, which is a reduction of ~0.95%. 

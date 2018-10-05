@@ -1,0 +1,6 @@
+We only see output from producer 0 because there are no interrupts;
+when we initialize the threads, we put on thread 0 first, and then we 
+run it using a while(1) loop, so that thread 1 never gets a chance to run, 
+since in this cooperative thread execution model, thread 0 runs until it
+explicitly gives up control through yielding or blocking, which doesn't 
+happen.

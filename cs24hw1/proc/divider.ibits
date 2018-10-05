@@ -1,0 +1,13 @@
+
+#remainder: R7; quotient: R6, dividend:R0; divisor:R1
+
+0a4E    #set quotient = 0; in bits, this is 00 0010 1 001 001 110
+0387    #remainder = dividend + quotient- R7=R0+R6; 0000 0011 1000 0111
+BCF     #LOOPTOP: remainder = remainder - divisor, R7=R7-R1;  00 0010 1 111 001 111
+23EA    #write top bit of remainder in R2; 001000 1 111 101 010
+2887    #if remainder is negative, go out to Done; 001010 0 010 000111, 
+1786    #increment quotient- R6=R6+R1; 0101 1 110 000  110 
+28C2    #this BNZ check is always true- go back to LOOPTOP; 0001010 0 011 000010
+03CF    #remainder = remainder + divisor, R7=R7+R1; 0000 1 111 001 111
+3c00    #Done
+

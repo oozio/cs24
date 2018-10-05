@@ -1,0 +1,148 @@
+Buddhabrot Renderer
+===================
+(assuming 1 KB is 2^10 bytes, and 1 MB is 2^20 bytes)
+
+1.  Size of `points` array
+
+The points array occupies space equal to sizeof(complex_t) * max_iters. Since 
+complex_t has 2 float members, each complex_t is 8 bytes. Since max_iters is 
+2000, points is 16000 bytes. 
+
+This (15.625 KB) will fit entirely into all of the data caches. 
+
+2.  Memory reference pattern of `points` array
+Overall, the memory reference pattern for points is good for getting cache
+hits.
+
+Stride: The elements of points are accessed with stride 1 in 
+compute_bbrot_point.
+
+Spatial locality: Since we go through the elements of points one at a time, 
+ we are accessing items close to other data items that have been recently 
+ accessed. So we have good spatial locality.
+
+Temporal locality: we don't accesses the same data item multiple times; we have
+no temporal locality.
+
+Reads/writes: we don't perform any IO on points.
+
+3.  Hardware caches and `points` array
+Since the points array has good locality and is only accessed with stride 1, 
+it'll probably benefit a lot from the program caches. 
+Since it can fit completely into every cache, it can run with L1 speeds. 
+
+
+4.  Size of `array` image-data
+Array is a brot_size by brot_size array of 32-bit integers. Since the image
+size is 2048, array occupies 2048 * 2048 * 4 bytes = 16777216 bytes.
+
+This (16384 KB, or 16 MB) will fit into none of the caches.
+
+
+5.  Memory reference pattern of `array` image-data
+Overall, array's memory reference pattern isn't very good/efficient for
+getting cache-hits.
+
+Stride: 
+
+a) In record_point, the [y_coord * bbrot_size + x_coord]'th element of
+array is accessed, where y_coord and x_coord come from different points.
+
+Best cases:
+If the y coordinates of the points are the same, then we only move the diff. 
+in x, which could be as small as 1. 
+
+If the x coordinates of the points are the same, then we move dy * 2048, which
+is at least 2048. 
+
+Otherwise, the best case scenario is that the x and y coordinates of 
+neighboring points are 1 apart, so that the stride with which elements
+of array are accessed is: x_1 + 1 + 2048 * (y_1 + 1) - (x_1 + 2048 * y_1), or
+2048 + 1 = 2049. 
+
+
+b) In output_ppm_image, the elements of 'array' are accessed sequentially,
+with stride 1.
+
+Spatial locality: Since most of the time we have a stride of at least 2048, we
+are for sure not accessing items close to other data items that have been 
+recently accessed. So we have bad spatial locality.
+
+Temporal locality: In output_ppm_image, we access the same element three times
+in a row, which is good for cache-hits; however, in the same function, we have
+three for loops that loop through the entire array, which is unnecessary
+and bad for temporal locality.
+
+Reads/writes: In output_ppm_image, we write each element of array three
+times into a file sequentially.
+
+
+6.  Hardware caches and `array` image-data
+Since the stride is so large, and the locality so poor, accessing from
+'array' probably doesn't benefit much from the caches. It might operate at 
+between L3 and main memory speeds, since there'll be constant cache misses
+that need to then pull from main memory.
+
+
+7.  Multithreading and hardware caches
+If there are multiple threads, each thread will be trying to access cache data
+from L3 for 'array'.
+When the cache is full, each thread T_i will try to evict data to make room
+for the info that T_i needs. Since it evicts data that itself isn't using, 
+each thread will probably evict data that the other threads need.
+
+This will get worse as N increases, since there will be more threads competing
+to access values of 'array'.
+
+This will get better as image size decreases, since then 'array' will be 
+smaller; if the image size decreases such that 'array' can fit into L1 or L2,
+the threads can use their individual caches.
+
+8.  Improvements to Buddhabrot Renderer
+a) We can split up 'array' into n smaller arrays and work on filling them one 
+at a time; this way we can fit them into the smaller caches, which improves 
+cache behavior for both single- and multi-threaded programs. So if the image
+size is 2048, we'd want to split array into 2 arrays to fit each half into L3,
+or 64 smaller arrays to fit each one into L2.
+We would have to take care to only work on one such subsection at a time; 
+otherwise, the nonlocality introduced this way isn't worth the gains, I think.
+
+b) Another small change that we could make is in the loops in output_ppm_image:
+from
+    for (i = 0; i < bbrot_size * bbrot_size; i++) {
+        uint32_t scaled = (array[i] * 512) / maxval;
+        if (scaled > 255)
+            scaled = 255;
+
+        array[i] = scaled;
+    }
+
+    /* Output the data as a Portable PixMap image. */
+
+    printf("P3 %d %d 255\n", bbrot_size, bbrot_size);
+    for (i = 0; i < bbrot_size * bbrot_size; i++)
+        printf("%u %u %u\n", array[i], array[i], array[i]);
+
+}
+ 
+to 
+ printf("P3 %d %d 255\n", bbrot_size, bbrot_size);   
+ for (i = 0; i < bbrot_size * bbrot_size; i++) {
+        uint32_t scaled = (array[i] * 512) / maxval;
+        if (scaled > 255)
+            scaled = 255;
+
+        array[i] = scaled;
+    /* Output the data as a Portable PixMap image. */
+        printf("%u %u %u\n", array[i], array[i], array[i]);
+    }
+
+to improve the temporal locality of accessing array[i], so that we don't
+have to load the entire array into memory one more time than necessary.
+
+c) We could also change the way that points and array are set up so that
+when we access the [y_coord * bbrot_size + x_coord]'th element of
+array in record_point, we do so one riw at a time, so that we can load 
+in an entire set of values for the same y_coord, and thus achieve stride 1.
+This may change the stride with which we access points earlier, so we 
+should make sure to optimize that as well.

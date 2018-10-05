@@ -1,0 +1,92 @@
+Page Replacement Policies and Scan Resistance
+=============================================
+
+1a.  Characterization of FIFO policy
+FIFO only considers how recently a page was loaded in. Since we add a page to 
+the queue when it is loaded and don't move the things in the queue around 
+afterwards, we don't know how frequently any page is accessed, nor does the
+recency of access after a page has been loaded affect the eviction policy. 
+
+
+1b.  Characterization of Second Chance / Clock policy
+These consider mostly recency, but frequency also affects when a page is 
+evicted. Recently accessed pages are moved to the back of the queue, and 
+we don't explicitly keep track of a page's previous history; but since a 
+page's accessed bit is cleared at every pass, the more frequently a page is 
+accessed, the more likely it is that its access bit stays on, and that it 
+won't be evicted.
+
+
+1c.  Characterization of Aging policy
+Aging considers both recency and frequency, since both factor into a page's
+age; since we keep track of the status of previous accesses in the lower bits
+of the age, we know how frequently a page is accessed.
+
+The recency matters more than the frequency; if P1 was not accessed last check
+and accessed this check, its age is (2 bits for simplicity) 10. If P2 was
+accessed last time and not accessed this time, its age is 01. Although they 
+have the same frequency of access, P1 was accessed more recently, and will be
+evicted later.
+
+
+2.  Susceptibility of Aging policy to scans
+Since the aging policy weighs the recency of access more than the frequency,
+it is also susceptible to scans: if a page (P1) accessed frequently is not 
+part of the scan, it'll be evicted before a page (P2) that's not accessed 
+frequently but is part of the scan: ie, P1 has age 011, P2 has age 100, P1
+is evicted first.
+
+However, it's less susceptible than LRU, in that if two pages are both part
+of the scan, the more frequently accessed one will be evicted later: ie, P1
+has age 111, P2 has age 100, P2 is evicted first.
+
+
+3a.  Comparison of 2Q to LRU-2
+They're pretty close? Instead of keeping an absolute "second most 
+recent access time" like LRU-2, 2Q knows only the relative second most
+access times. 2Q also keeps track of the "first most recent access time", 
+which is the order of the pages in their queues; this value also affects
+how pages are evicted, since pages that are accessed more often will then
+tend to be on the front of the Am queue, which is the last place we evict
+from. 
+
+For 2Q, the pages in A1 are always evicted first, which corresponds with 
+LRU-2's policy of removing "neg. infinity" 2nd access times first.
+
+
+3b.  Design a version of 2Q that uses a timer interrupt and "accessed" bit
+While the timer is running:
+    When a pagefault occurs, set the page's access bit to 0, and put 
+the page on the front of A1.
+    
+    When the timer dings, go through every page in A1 and then Am:
+        In A1, if a page's access bit is 1, clear the bit and move it to
+            the start of Am.
+               if a page's access bit is 0, do nothing.
+        In Am, if a page's access bit is 1, clear the bit and move it to
+            the front of Am.
+               if a page's access bit is 0, do nothing.
+
+   If at any time the sum of pages in A1 and Am exceeds the maximum of 
+allowed resident pages, evict the last page in A1; if its access bit is set,
+remove the last page that has a cleared access bit.
+    If A1 is empty, evict the last page of Am; if its access bit is set,
+remove the last page that has a cleared access bit.
+
+3c.  Comparison of your policy to 2Q
+This version doesn't move individual pages in the queue whenever each one is
+accessed, but rather in batches at a set interval decided by the timer. It also
+considers the page's current access bit during eviction, which should make it
+a bit more efficient.
+
+When there is a scan, the pages in the scan are:
+    1) either already accessed, in A1 or Am, and have their access bit
+        set to 1, or 
+    2) are added to the front of A1 with an access bit of 0. 
+
+The next time that the timer ticks, the pages in the scan that were
+already residents are moved to the front of Am.
+
+Then we can recognize the pages that were part of the scan since they're 
+in A1 with an access bit of 0, and we can recognize the pages that weren't
+since they're in Am.

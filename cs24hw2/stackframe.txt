@@ -1,0 +1,27 @@
+Stack Contents of fact(3)
+-------------------------
+
+Address     Value       Description
+--------    --------    ------------------------------------
+0x1008      ???         return address for c or a base pointer
+                        or a local variable
+
+0x1000      ???         base pointer address or a local variable
+
+0x0FF8      3           the value in %rdi, from the push in 1st
+                        line of fact_continue     
+
+0x0FF0      0x2020      return address for fact_resume for n = 3
+
+0x0FE8      2           the value in %rdi, from the push in 1st
+                        line of fact_continue 
+
+0x0FE0      0x2020      return address for fact_resume for n = 2
+
+0x0FD8      1           the value in %rdi, from the push in 1st
+                        line of fact_continue 
+                        
+0x0FD0      0x2020      return address for fact_resume for n = 1
+
+
+---- fact return ------

@@ -1,0 +1,8 @@
+Expression:  n = n & (n - 1)
+----------------------------
+
+This expression takes out the least significant 1 in n's binary representation, reducing its number of 1's by 1. 
+
+It works by subtracting 1 from n; then, if n is odd, then it has representation _ _ _ 1, and (n-1) has representation _ _ _ 0. Then n&(n-1) has representation _ _ _ 0, so the trailing 1 is lost. If n is even, then it has representation _ _ 1 0, and (n-1) has representation _ _ 0 1. Then n&(n-1) has representation _ _ 0 0, so the trailing 1 is lost again.
+
+We can use it to count the number of 1's more quickly, since this runs at most n times, and the function we write with it doesn't need an if statement or an incrementing bitmask.

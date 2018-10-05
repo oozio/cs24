@@ -1,0 +1,12 @@
+CS:APP3e Practice Problem 2.46, pp.111-112:
+-------------------------------------------
+
+A. 
+0.1-x is, in binary:
+0.0001100110011001100110011001100110011[...] - 0.0011001100110011001100 = 0.0000000000000000000110011001100110011[...]
+
+B. Since the first 20 digits after the decimal point are gone, this is 1/(2^20) * 1/10 in decimal, or approximately 9.53674316e-8 seconds.
+
+C. Every 0.1 seconds, we get error 9.53674316e-8, so in around 100 hours, we get 9.53674316e-8 * 100 * 60 * 60 * 10 error = 0.34332275376 error in seconds.
+
+D. At around 2000 m/s, with cumulative error 0.34332275376 seconds, we get 0.34332275376 * 2000 =  686.65 error in meters. QAQ that's a lot

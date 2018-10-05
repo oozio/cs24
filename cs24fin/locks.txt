@@ -1,0 +1,50 @@
+Locking Primitives
+==================
+
+1a.  Benefit of spinlocks over normal locks
+A spinlock is better than a normal lock in situations where locks only need to
+be held for a short amount of time, since it's faster to spin and wait instead
+of having to do the blocking/context saving/switching stuff every time.
+
+1b.  Spinlocks on 1-processor systems
+No, using spinlocks doesn't really make sense on a single-processor system.
+If there's only one processor, and we fail to acquire the lock, the lock will
+spin. Since there's only 1 processor, there's no way for processes from other
+processors to run the lock-holding thread and change the lock-condition; we 
+have to wait for the current processor to finish that thread. Meanwhile, the
+spinlock is taking up CPU, postponing the completion of the original thread.
+
+2a.  Read/write lock fairness issues
+If there are many more readers than writers, this is unfair to the writers,
+since they'll have to wait an indefinite amount of time before getting the
+lock. 
+
+Suppose we have W1, R1, W2, R2, R3, ..R10000 blocked. W1 would receive
+the lock first, but then when R1 receives the lock, R2 - R10000 would also
+be unblocked before W2, so W2 has to wait a really long time. 
+If, while those threads are running, more readers pile up, W2 might never 
+have a chance to run. 
+
+
+2b.  Fair read/write lock design
+
+How blocked requesters are managed:
+- keep track of blocked readers in a queue
+- keep track of blocked writers in a separate queue
+
+If a reader R1 attempts to acquire the lock:
+- if no one holds the lock, grant read access to R1 immediately
+- if no writer holds the lock, and the queue of blocked writers is empty, 
+	grant read access to R1 immediately, even if other readers hold the lock
+- if no writer holds the lock, but the queue of blocked writers is not empty,
+	block R1 until the first item in that queue has been run
+- if a writer W holds the lock, R1 is blocked until W releases the lock
+
+If a writer W1 attempts to acquire the lock:
+- if no one holds the lock, grant write access to W1 immediately
+- if the lock is currently held by some number of readers, block W1 until no 
+	more readers hold the lock 
+
+- if another writer W2 currently holds the lock, W1 is blocked until W2 has
+   released the lock
+
